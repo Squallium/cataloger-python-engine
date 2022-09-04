@@ -6,12 +6,13 @@ import logging
 
 import fire
 
+from cataloger_python_engine.lazy_coders.lazy_mongoose import LazyMongoose
+
 
 class CatalogerPythonEngine:
 
     def __init__(self) -> None:
-        super().__init__()
-
+        self.lazy_mongoose = LazyMongoose()
 
 class MainDefaultTest:
 
