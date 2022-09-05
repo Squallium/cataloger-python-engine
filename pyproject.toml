@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cataloger-python-engine"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Borja Refoyo Ruiz <squallium3@gmail.com>"]
 readme = "README.md"
@@ -11,6 +11,7 @@ version_variable = [
     "cataloger_python_engine/__init__.py:__version__",
     "pyproject.toml:version"
 ]
+version_source = "tag"
 branch = "main"
 upload_to_pypi = false
 upload_to_release = true

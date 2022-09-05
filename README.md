@@ -29,3 +29,4 @@ After installing all the requirements you can run
 
 ### Problems ###
 * With the auto-changelog library I got this ([markupsafe error](https://stackoverflow.com/questions/72191560/importerror-cannot-import-name-soft-unicode-from-markupsafe))
+* Semantic release problem with version from tag ([bumping version with tag](https://github.com/relekang/python-semantic-release/issues/104))
