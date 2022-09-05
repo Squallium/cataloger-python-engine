@@ -6,16 +6,27 @@ authors = ["Borja Refoyo Ruiz <squallium3@gmail.com>"]
 readme = "README.md"
 packages = [{ include = "cataloger_python_engine" }]
 
+[tool.semantic_release]
+version_variable = [
+    "cataloger_python_engine/__init__.py:__version__",
+    "pyproject.toml:version"
+]
+branch = "main"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "pip install poetry && poetry build"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 fire = "^0.4.0"
 
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"
 pytest-cov = "^3.0.0"
 commitizen = "^2.32.2"
+auto-changelog = "^0.5.3"
+MarkupSafe = "2.0.1"
+python-semantic-release = "^7.31.4"
 
 [build-system]
 requires = ["poetry-core"]
