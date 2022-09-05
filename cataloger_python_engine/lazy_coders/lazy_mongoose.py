@@ -71,6 +71,21 @@ class LazyMongoose(LazyCoders):
         self.interfaces = []
         self.connections = {}
 
+    def _end_tags(self):
+        return self.END_TAGS
+
+    def _write_mode(self):
+        return self.WRITE_MODE
+
+    def _line_hook(self, line, extra=None):
+        try:
+            extended_model = f'{self.model_classes[extra]}Model'
+            if extended_model in line:
+                self.model_classes[extra] = extended_model
+        except KeyError as ke:
+            logging.warning(f'Modelo {extra} no encontrado en el diccionario de modelos')
+
+
     def scan_directory(self, dir_abs_path):
         # default main folders that will be edited
         self.__schemes_folder = os.path.join(dir_abs_path, 'schemas') + '/'
@@ -139,7 +154,7 @@ class LazyMongoose(LazyCoders):
                 'lines': lines_bro
             }
         ]
-        self.__lazy_writer(original_file, new_file, lazy_blocks)
+        self._lazy_writer(original_file, new_file, lazy_blocks)
 
     def __write_connection(self, conn_name):
         new_file = os.path.join(self.__output_base_path, f'{conn_name}.conn.ts')
@@ -167,7 +182,7 @@ class LazyMongoose(LazyCoders):
                 'lines': lines_exports
             }
         ]
-        self.__lazy_writer(original_file, new_file, lazy_blocks)
+        self._lazy_writer(original_file, new_file, lazy_blocks)
 
 
     def __create_emtpy_model_file(self, dir_path, file_name):
@@ -215,7 +230,7 @@ class LazyMongoose(LazyCoders):
                 'lines': gen_model[self.BODY]
             }
         ]
-        self.__lazy_writer(original_file, new_file, lazy_blocks, model_name)
+        self._lazy_writer(original_file, new_file, lazy_blocks, model_name)
 
     def __generate_model(self, model_name):
         gen_model = {
@@ -299,46 +314,6 @@ class LazyMongoose(LazyCoders):
                         self.cap_name_schemas[schema_cap_name] = model_name
                         self.schema_classes[model_name] = f'{schema_cap_name}Schema'
                         self.model_classes[model_name] = f'I{schema_cap_name}'
-
-    def __check_extended_model(self, model_name, line):
-        try:
-            extended_model = f'{self.model_classes[model_name]}Model'
-            if extended_model in line:
-                self.model_classes[model_name] = extended_model
-        except KeyError as ke:
-            logging.warning(f'Modelo {model_name} no encontrado en el diccionario de modelos')
-
-    def __lazy_writer(self, original_file, new_file, lazy_blocks, model_name=None):
-        with open(new_file, 'w') as new_lazy_file:
-            with open(original_file) as model_file:
-                write_allowed = False
-                for line in model_file:
-                    logging.info(line)
-                    for lazy_block in lazy_blocks:
-                        if line.strip() == lazy_block['tag']:
-                            write_allowed = True
-                            tabs = line[:line.index('/')]
-                            new_lazy_file.write(tabs + lazy_block['tag'] + '\n')
-                            for lazy_block_line in lazy_block['lines']:
-                                new_lazy_file.write(tabs + lazy_block_line + '\n')
-                        elif line.strip() == self.END_TAGS[lazy_block['tag']]:
-                            write_allowed = False
-                    # escribimos las partes no automatizadas
-                    if not write_allowed:
-                        new_lazy_file.write(line)
-
-                    if model_name:
-                        self.__check_extended_model(model_name, line)
-
-        # escribimos el resultado
-        if self.WRITE_MODE:
-            dst_folder = os.path.join(os.path.abspath(original_file))
-            try:
-                os.makedirs(dst_folder)
-            except FileExistsError as fee:
-                pass
-            dst_file = os.path.join(original_file)
-            shutil.copyfile(new_file, dst_file)
 
     def __save_model_in_connections(self, model_name):
         conn_name = self.__connection_name(model_name)
