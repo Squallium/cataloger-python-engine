@@ -98,13 +98,77 @@ class LazyMongoose(LazyCoders):
             gen_model = self.__generate_model(model_name)
             self.__write_new_model(model_name, gen_model)
         # connections generation
-        # for conn_name in self.connections:
-        #     self.connections[conn_name].sort()
-        #     self.write_connection(conn_name)
-        #     self.write_configurations(subdir_folder)
+        for conn_name in self.connections:
+            self.connections[conn_name].sort()
+            self.__write_connection(conn_name)
+            self.__write_configurations(dir_abs_path)
 
         logging.info(dir_abs_path)
         logging.info(self.__output_base_path)
+
+    def __write_configurations(self, dir_abs_path):
+        new_file = os.path.join(self.__output_base_path, f'app.ts')
+        original_file = os.path.join(dir_abs_path, f'app.ts')
+
+        lines_import = []
+        lines_promises = []
+        lines_bro = []
+
+        for conn_name in self.connections.keys():
+            conn_class = f'{conn_name[0].upper()}{conn_name[1:]}'
+            # conn_path = os.path.join('.', subdir_folder, f'connections/{conn_name}.conn')
+            conn_path = os.path.join('', f'./connections/{conn_name}.conn')
+
+            lines_import.append(f'import {"{" + conn_class + "Conn}"} from "{conn_path}";')
+            lines_promises.append(f'{conn_class}Conn,')
+            for model_name in self.connections[conn_name]:
+                schema_cap_name = self.schema_cap_names[model_name]
+                lines_bro.append(f'{conn_class}Conn.model(\'{schema_cap_name}\'),')
+
+        lazy_blocks = [
+            {
+                'tag': self.LAZY_BEGIN_IMPORTS,
+                'lines': lines_import
+            },
+            {
+                'tag': self.LAZY_BEGIN_PROMISES,
+                'lines': lines_promises
+            },
+            {
+                'tag': self.LAZY_BEGIN_BRO,
+                'lines': lines_bro
+            }
+        ]
+        self.__lazy_writer(original_file, new_file, lazy_blocks)
+
+    def __write_connection(self, conn_name):
+        new_file = os.path.join(self.__output_base_path, f'{conn_name}.conn.ts')
+        original_file = os.path.join(self.__conns_folder, f'{conn_name}.conn.ts')
+
+        lines_import = []
+        lines_exports = []
+        for model_name in self.connections[conn_name]:
+            schema_cap_name = self.schema_cap_names[model_name]
+            schema_class = self.schema_classes[model_name]
+            model_class = self.model_classes[model_name]
+            lines_import.append(f'import {"{" + schema_class + "}"} from "../schemas/{conn_name}/{model_name}.schema";')
+            lines_import.append(f'import {"{" + model_class + "}"} from "../models/{conn_name}/{model_name}.model";')
+
+            lines_exports.append(
+                f'export const {schema_cap_name}: Model<{model_class}> = {conn_name.capitalize()}Conn.model<{model_class}>(\'{schema_cap_name}\', {schema_class});')
+
+        lazy_blocks = [
+            {
+                'tag': self.LAZY_BEGIN_IMPORTS,
+                'lines': lines_import
+            },
+            {
+                'tag': self.LAZY_BEGIN,
+                'lines': lines_exports
+            }
+        ]
+        self.__lazy_writer(original_file, new_file, lazy_blocks)
+
 
     def __create_emtpy_model_file(self, dir_path, file_name):
         file_path = os.path.join(dir_path, file_name)
