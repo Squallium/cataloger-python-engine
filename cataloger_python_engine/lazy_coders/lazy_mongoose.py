@@ -156,10 +156,30 @@ class LazyMongoose(LazyCoders):
         ]
         self._lazy_writer(original_file, new_file, lazy_blocks)
 
-    def __write_connection(self, conn_name):
-        new_file = os.path.join(self.__output_base_path, f'{conn_name}.conn.ts')
-        original_file = os.path.join(self.__conns_folder, f'{conn_name}.conn.ts')
+    def __create_emtpy_connection_file(self, dir_path, file_name):
+        file_path = os.path.join(dir_path, file_name)
+        conn_name = file_name.replace('.conn.ts', '')
 
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as new_model_file:
+                new_model_file.write('import {ConnectOptions, createConnection, Model} from "mongoose";' + '\n')
+                new_model_file.write('\n')
+                new_model_file.write(self.LAZY_BEGIN_IMPORTS + '\n')
+                new_model_file.write(self.LAZY_END_IMPORTS + '\n')
+                new_model_file.write('\n')
+                new_model_file.write(f'const uri: string = process.env.MONGO_URI_{conn_name.upper()} || "";' + '\n')
+                new_model_file.write('const options: ConnectOptions = {};' + '\n')
+                new_model_file.write(f'export const {conn_name.capitalize()}Conn = createConnection(uri, options);' + '\n')
+                new_model_file.write('\n')
+                new_model_file.write(self.LAZY_BEGIN + '\n')
+                new_model_file.write(self.LAZY_END + '\n')
+
+        return file_path
+
+    def __write_connection(self, conn_name):
         lines_import = []
         lines_exports = []
         for model_name in self.connections[conn_name]:
@@ -182,6 +202,15 @@ class LazyMongoose(LazyCoders):
                 'lines': lines_exports
             }
         ]
+
+        conn_file_name = f'{conn_name}.conn.ts'
+        new_file = os.path.join(self.__output_base_path, conn_file_name)
+        if self.WRITE_MODE:
+            original_file = self.__create_emtpy_connection_file(self.__conns_folder, conn_file_name)
+        else:
+            original_file = self.__create_emtpy_connection_file(self.__output_base_path, 'empty.conn.ts')
+
+
         self._lazy_writer(original_file, new_file, lazy_blocks)
 
 
