@@ -1,0 +1,10 @@
+{
+  "project_name": "Cataloger Backend Package",
+  "project_snake": "{{ cookiecutter.project_name | to_snake }}",
+  "project_camel_case": "{{ cookiecutter.project_name | to_camel }}",
+  "project_kebab": "{{ cookiecutter.project_name | to_kebab }}",
+  "project_screaming_snake": "{{ cookiecutter.project_name | to_screaming_snake }}",
+  "_extensions": [
+    "jinja2_strcase.StrcaseExtension"
+  ]
+}

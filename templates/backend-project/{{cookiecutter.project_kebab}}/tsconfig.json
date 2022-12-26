@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "pretty": true,
+    "sourceMap": true,
+    "outDir": ".",
+    "baseUrl": "."
+  },
+  "include": [
+    "*.ts",
+    "bin/**/*.ts",
+    "connections/**/*.ts",
+    "models/**/*.ts",
+    "schemas/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "extends": "@tsconfig/node18/tsconfig.json"
+}
