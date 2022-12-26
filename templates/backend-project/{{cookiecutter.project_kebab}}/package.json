@@ -1,0 +1,21 @@
+{
+  "name": "@cataloger/{{cookiecutter.project_kebab}}",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "./node_modules/typescript/bin/tsc",
+    "start": "yarn node ./bin/www",
+    "test": "cross-env ENV=test mocha 'test/**/*test.ts' --timeout 60000 --exit",
+    "coverage": "cross-env ENV=test nyc --reporter=lcov  mocha 'test/**/*.ts' --timeout 60000 --exit",
+    "docs": "typedoc --excludeExternals --exclude \"**/node_modules/**\"  --out ./docs ./"
+  },
+  "dependencies": {
+    "@cataloger/core": "^0.1.1",
+    "axios": "^0.27.2",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4"
+  }
+}
