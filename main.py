@@ -7,12 +7,14 @@ import logging
 import fire
 
 from cataloger_python_engine.lazy_coders.lazy_mongoose import LazyMongoose
+from cataloger_python_engine.utils.file_formats import FileFormats
 
 
 class CatalogerPythonEngine:
 
     def __init__(self) -> None:
         self.lazy_mongoose = LazyMongoose()
+        self.file_formats = FileFormats()
 
 class MainDefaultTest:
 
