@@ -57,9 +57,13 @@ class LazyMongoose(LazyCoders):
         self.__schemes_folder = None
         self.__models_folder = None
         self.__conns_folder = None
+        self.__dep_schemes_folder = None
+        self.__dep_models_folder = None
 
         self.__schemes = {}
         self.__models = {}
+        self.__dep_schemes = {}
+        self.__dep_models = {}
 
         self.__output_base_path = None
 
@@ -85,16 +89,21 @@ class LazyMongoose(LazyCoders):
         except KeyError as ke:
             logging.warning(f'Modelo {extra} no encontrado en el diccionario de modelos')
 
-
-    def scan_directory(self, dir_abs_path):
+    def scan_directory(self, dir_abs_path, dep_dir_abs_path=None):
         # default main folders that will be edited
         self.__schemes_folder = os.path.join(dir_abs_path, 'schemas') + '/'
         self.__models_folder = os.path.join(dir_abs_path, 'models')
         self.__conns_folder = os.path.join(dir_abs_path, 'connections')
+        if dep_dir_abs_path:
+            self.__dep_schemes_folder = os.path.join(dep_dir_abs_path, 'schemas') + '/'
+            self.__dep_models_folder = os.path.join(dep_dir_abs_path, 'models')
 
         # scanning existing schemas and models
         self.__scan_files_recursively(self.__schemes_folder, self.__schemes, '.ts', '.schema.ts')
         self.__scan_files_recursively(self.__models_folder, self.__models, '.ts', '.model.ts')
+        if dep_dir_abs_path:
+            self.__scan_files_recursively(self.__dep_schemes_folder, self.__dep_schemes, '.ts', '.schema.ts')
+            self.__scan_files_recursively(self.__dep_models_folder, self.__dep_models, '.ts', '.model.ts')
 
         # cleaning temporal folder
         try:
@@ -106,6 +115,8 @@ class LazyMongoose(LazyCoders):
 
         # analyzing schemas to cover possible dependencies between models
         for model_name in self.__schemes.keys():
+            self.__analyze_schema(model_name)
+        for model_name in self.__dep_schemes.keys():
             self.__analyze_schema(model_name)
         # model generation
         for model_name in self.__schemes.keys():
@@ -172,7 +183,8 @@ class LazyMongoose(LazyCoders):
                 new_model_file.write('\n')
                 new_model_file.write(f'const uri: string = process.env.MONGO_URI_{conn_name.upper()} || "";' + '\n')
                 new_model_file.write('const options: ConnectOptions = {};' + '\n')
-                new_model_file.write(f'export const {conn_name.capitalize()}Conn = createConnection(uri, options);' + '\n')
+                new_model_file.write(
+                    f'export const {conn_name.capitalize()}Conn = createConnection(uri, options);' + '\n')
                 new_model_file.write('\n')
                 new_model_file.write(self.LAZY_BEGIN + '\n')
                 new_model_file.write(self.LAZY_END + '\n')
@@ -210,9 +222,7 @@ class LazyMongoose(LazyCoders):
         else:
             original_file = self.__create_emtpy_connection_file(self.__output_base_path, 'empty.conn.ts')
 
-
         self._lazy_writer(original_file, new_file, lazy_blocks)
-
 
     def __create_emtpy_model_file(self, dir_path, file_name):
         file_path = os.path.join(dir_path, file_name)
@@ -362,6 +372,8 @@ class LazyMongoose(LazyCoders):
         basename = os.path.basename(full_path)
 
         result = full_path.replace(self.__schemes_folder, '')
+        if self.__dep_schemes_folder:
+            result = result.replace(self.__dep_schemes_folder, '')
         result = result.replace(basename, '')
         return result
 
@@ -388,7 +400,10 @@ class LazyMongoose(LazyCoders):
                     else:
                         gen_model[self.IMPORTS].append(f'import {"{" + result + "}"} from "./{model_name}.model";')
                 else:
-                    gen_model[self.IMPORTS].append(f'import {"{" + result + "}"} from "../{model_name}.model";')
+                    if self.__is_dep_model(model_name):
+                        gen_model[self.IMPORTS].append(f'import {"{" + result + "}"} from "@cataloger/core/models/{model_name}.model";')
+                    else:
+                        gen_model[self.IMPORTS].append(f'import {"{" + result + "}"} from "../{model_name}.model";')
 
         if is_array:
             result = f'[{result}]'
@@ -396,10 +411,19 @@ class LazyMongoose(LazyCoders):
         return result
 
     def __schema_path(self, model_name):
-        return self.__schemes[model_name]
+        if self.__is_dep_schema(model_name):
+            return self.__dep_schemes[model_name]
+        else:
+            return self.__schemes[model_name]
 
     def __scan_files_recursively(self, folder, cache, ext, suffix):
         for root, dirs, files in os.walk(folder, topdown=True):
             for f in files:
                 if f.endswith(ext):
                     cache[os.path.basename(f).replace(suffix, '')] = os.path.join(root, f)
+
+    def __is_dep_schema(self, model_name):
+        return model_name in self.__dep_schemes.keys()
+
+    def __is_dep_model(self, model_name):
+        return model_name.lower() in self.__dep_models.keys()
